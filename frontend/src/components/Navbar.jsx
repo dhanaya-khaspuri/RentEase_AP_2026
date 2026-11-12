@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 export const Navbar = () => {
-  const { currentRole, switchRole, data, activePropertyId, setActivePropertyId, resetToDefault } = useApp();
+  const { currentRole, switchRole, data, activePropertyId, setActivePropertyId, resetToDefault, backendConnected } = useApp();
   const currentUser = data.currentUser;
 
   const currentProperty = data.properties.find(p => p.id === activePropertyId) || data.properties[0];
@@ -36,6 +36,16 @@ export const Navbar = () => {
                 <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200">
                   v1.0 (Live Demo)
                 </span>
+                {backendConnected ? (
+                  <span className="hidden lg:inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>API: Connected (:5001)</span>
+                  </span>
+                ) : (
+                  <span className="hidden lg:inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500">
+                    <span>Standalone Mock</span>
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-slate-500 hidden md:block">
                 Smart PG & Rental Property Operating System

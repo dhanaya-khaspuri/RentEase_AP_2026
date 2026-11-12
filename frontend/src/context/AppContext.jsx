@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { initialData } from '../data/initialData';
+import { api } from '../services/api';
 
 const AppContext = createContext();
 
@@ -23,9 +24,49 @@ export const AppProvider = ({ children }) => {
   // Current view role: 'tenant' | 'owner' | 'admin'
   const [currentRole, setCurrentRole] = useState(() => data.currentUser?.role || 'owner');
 
+  // Backend connection status
+  const [backendConnected, setBackendConnected] = useState(false);
+
   // Active modal controls
   const [receiptModalData, setReceiptModalData] = useState(null);
   const [paymentModalData, setPaymentModalData] = useState(null);
+
+  // Hydrate from live backend if available
+  useEffect(() => {
+    const checkAndSyncBackend = async () => {
+      try {
+        const health = await api.checkHealth();
+        if (health && health.status === 'healthy') {
+          setBackendConnected(true);
+
+          // Fetch initial collections
+          const [propsRes, roomsRes, tenantsRes, paymentsRes, complaintsRes, noticesRes] = await Promise.allSettled([
+            api.getProperties(),
+            api.getRooms(),
+            api.getTenants(),
+            api.getPayments(),
+            api.getComplaints(),
+            api.getNotices()
+          ]);
+
+          setData(prev => ({
+            ...prev,
+            properties: propsRes.status === 'fulfilled' && propsRes.value?.data ? propsRes.value.data : prev.properties,
+            rooms: roomsRes.status === 'fulfilled' && roomsRes.value?.data ? roomsRes.value.data : prev.rooms,
+            payments: paymentsRes.status === 'fulfilled' && paymentsRes.value?.data ? paymentsRes.value.data : prev.payments,
+            complaints: complaintsRes.status === 'fulfilled' && complaintsRes.value?.data ? complaintsRes.value.data : prev.complaints,
+            notices: noticesRes.status === 'fulfilled' && noticesRes.value?.data ? noticesRes.value.data : prev.notices,
+          }));
+        } else {
+          setBackendConnected(false);
+        }
+      } catch (err) {
+        setBackendConnected(false);
+      }
+    };
+
+    checkAndSyncBackend();
+  }, []);
 
   // Sync to localStorage
   useEffect(() => {
@@ -55,7 +96,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // Property Handlers
-  const addProperty = (newProp) => {
+  const addProperty = async (newProp) => {
     const propId = `prop_${Date.now()}`;
     const property = {
       id: propId,
@@ -74,11 +115,21 @@ export const AppProvider = ({ children }) => {
       properties: [...prev.properties, property]
     }));
     setActivePropertyId(propId);
+
+    // Sync to backend
+    if (backendConnected) {
+      try {
+        await api.createProperty(property);
+      } catch (e) {
+        console.warn('Backend sync failed, saved locally', e);
+      }
+    }
+
     return property;
   };
 
   // Room Handlers
-  const addRoom = (roomData) => {
+  const addRoom = async (roomData) => {
     const roomId = `room_${Date.now()}`;
     const newRoom = {
       id: roomId,
@@ -98,11 +149,21 @@ export const AppProvider = ({ children }) => {
       ...prev,
       rooms: [...prev.rooms, newRoom]
     }));
+
+    // Sync to backend
+    if (backendConnected) {
+      try {
+        await api.createRoom(newRoom);
+      } catch (e) {
+        console.warn('Backend sync failed, saved locally', e);
+      }
+    }
+
     return newRoom;
   };
 
   // Tenant Handlers
-  const addTenant = (tenantData) => {
+  const addTenant = async (tenantData) => {
     const tenantId = `usr_tenant_${Date.now()}`;
     const newTenant = {
       id: tenantId,
@@ -159,10 +220,19 @@ export const AppProvider = ({ children }) => {
       };
     });
 
+    // Sync to backend
+    if (backendConnected) {
+      try {
+        await api.createTenant(newTenant);
+      } catch (e) {
+        console.warn('Backend sync failed, saved locally', e);
+      }
+    }
+
     return newTenant;
   };
 
-  const removeTenant = (tenantId) => {
+  const removeTenant = async (tenantId) => {
     setData(prev => {
       const targetTenant = prev.users.find(u => u.id === tenantId);
       const updatedRooms = prev.rooms.map(r => {
@@ -182,6 +252,14 @@ export const AppProvider = ({ children }) => {
         rooms: updatedRooms
       };
     });
+
+    if (backendConnected) {
+      try {
+        await api.removeTenant(tenantId);
+      } catch (e) {
+        console.warn('Backend remove failed', e);
+      }
+    }
   };
 
   const reassignTenantRoom = (tenantId, newRoomId) => {
@@ -224,7 +302,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // Payment Handlers (Mock UPI, Card, Cash)
-  const processPayment = ({ paymentId, method, transactionId, notes }) => {
+  const processPayment = async ({ paymentId, method, transactionId, notes }) => {
     const txn = transactionId || `TXN_${method.toUpperCase()}_${Math.floor(1000000000 + Math.random() * 9000000000)}`;
     const now = new Date();
     const formattedDate = `${now.toISOString().split('T')[0]} ${now.toTimeString().split(' ')[0].substring(0, 5)}`;
@@ -253,11 +331,19 @@ export const AppProvider = ({ children }) => {
       };
     });
 
+    if (backendConnected) {
+      try {
+        await api.processCheckout({ paymentId, paymentMethod: method, notes });
+      } catch (e) {
+        console.warn('Backend payment checkout failed, saved locally', e);
+      }
+    }
+
     return completedPayment;
   };
 
   // Complaint Handlers
-  const raiseComplaint = (complaintData) => {
+  const raiseComplaint = async (complaintData) => {
     const compId = `cmp_${Date.now()}`;
     const now = new Date();
     const formattedDate = `${now.toISOString().split('T')[0]} ${now.toTimeString().split(' ')[0].substring(0, 5)}`;
@@ -286,10 +372,18 @@ export const AppProvider = ({ children }) => {
       complaints: [newComplaint, ...prev.complaints]
     }));
 
+    if (backendConnected) {
+      try {
+        await api.createComplaint(newComplaint);
+      } catch (e) {
+        console.warn('Backend sync failed, saved locally', e);
+      }
+    }
+
     return newComplaint;
   };
 
-  const updateComplaintStatus = (complaintId, nextStatus, assignedTo, resolutionNotes) => {
+  const updateComplaintStatus = async (complaintId, nextStatus, assignedTo, resolutionNotes) => {
     const now = new Date();
     const formattedDate = `${now.toISOString().split('T')[0]} ${now.toTimeString().split(' ')[0].substring(0, 5)}`;
 
@@ -308,10 +402,18 @@ export const AppProvider = ({ children }) => {
         return c;
       })
     }));
+
+    if (backendConnected) {
+      try {
+        await api.updateComplaintStatus(complaintId, nextStatus, assignedTo, resolutionNotes);
+      } catch (e) {
+        console.warn('Backend update failed, saved locally', e);
+      }
+    }
   };
 
   // Notice Handlers
-  const publishNotice = (noticeData) => {
+  const publishNotice = async (noticeData) => {
     const noticeId = `not_${Date.now()}`;
     const newNotice = {
       id: noticeId,
@@ -331,14 +433,30 @@ export const AppProvider = ({ children }) => {
       notices: [newNotice, ...prev.notices]
     }));
 
+    if (backendConnected) {
+      try {
+        await api.createNotice(newNotice);
+      } catch (e) {
+        console.warn('Backend sync failed, saved locally', e);
+      }
+    }
+
     return newNotice;
   };
 
-  const deleteNotice = (noticeId) => {
+  const deleteNotice = async (noticeId) => {
     setData(prev => ({
       ...prev,
       notices: prev.notices.filter(n => n.id !== noticeId)
     }));
+
+    if (backendConnected) {
+      try {
+        await api.deleteNotice(noticeId);
+      } catch (e) {
+        console.warn('Backend delete failed, saved locally', e);
+      }
+    }
   };
 
   // Admin User Status Toggle
@@ -372,6 +490,7 @@ export const AppProvider = ({ children }) => {
         switchRole,
         activePropertyId,
         setActivePropertyId,
+        backendConnected,
         addProperty,
         addRoom,
         addTenant,

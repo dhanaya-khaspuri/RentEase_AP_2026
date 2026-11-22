@@ -1,0 +1,25 @@
+Query ID: R12
+Type: READ
+Description: Admin: all users on the platform with their roles and status
+Query SQL:
+SELECT id, name, email, phone, role, status, created_at
+FROM   users
+ORDER  BY created_at DESC;
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+                                                 QUERY PLAN                                                  
+-------------------------------------------------------------------------------------------------------------
+ Sort  (cost=11.46..11.56 rows=40 width=1250) (actual time=0.011..0.011 rows=4.00 loops=1)
+   Sort Key: created_at DESC
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=4
+   ->  Seq Scan on users  (cost=0.00..10.40 rows=40 width=1250) (actual time=0.003..0.003 rows=4.00 loops=1)
+         Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=113
+ Planning Time: 0.150 ms
+ Execution Time: 0.024 ms
+(10 rows)
+

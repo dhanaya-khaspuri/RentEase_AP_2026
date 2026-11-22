@@ -1,0 +1,44 @@
+Query ID: R6
+Type: READ
+Description: Payment history: all payments for a tenant, newest first
+Query SQL:
+SELECT pay.id,
+       pay.month,
+       pay.due_date,
+       pay.amount,
+       pay.status,
+       pay.payment_date,
+       pay.payment_method,
+       pay.transaction_id,
+       pay.notes,
+       p.name AS property_name,
+       pay.room_number
+FROM   payments pay
+JOIN   properties p ON p.id = pay.property_id
+WHERE  pay.tenant_id = 'tenant-uuid-here'
+ORDER  BY pay.due_date DESC;
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=19.23..19.24 rows=1 width=1500) (actual time=0.017..0.018 rows=2.00 loops=1)
+   Sort Key: pay.due_date DESC
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=8
+   ->  Nested Loop  (cost=0.14..19.22 rows=1 width=1500) (actual time=0.008..0.009 rows=2.00 loops=1)
+         Buffers: shared hit=5
+         ->  Seq Scan on payments pay  (cost=0.00..10.75 rows=1 width=1074) (actual time=0.004..0.004 rows=2.00 loops=1)
+               Filter: ((tenant_id)::text = 'tenant-uuid-here'::text)
+               Buffers: shared hit=1
+         ->  Index Scan using properties_pkey on properties p  (cost=0.14..8.16 rows=1 width=606) (actual time=0.002..0.002 rows=1.00 loops=2)
+               Index Cond: ((id)::text = (pay.property_id)::text)
+               Index Searches: 2
+               Buffers: shared hit=4
+ Planning:
+   Buffers: shared hit=242
+ Planning Time: 0.269 ms
+ Execution Time: 0.039 ms
+(17 rows)
+

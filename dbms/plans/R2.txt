@@ -1,0 +1,23 @@
+Query ID: R2
+Type: READ
+Description: Profile: fetch full profile of a logged-in user by id
+Query SQL:
+SELECT id, name, email, phone, role, status, created_at, updated_at
+FROM   users
+WHERE  id = 'user-uuid-here';
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+                                                       QUERY PLAN                                                       
+------------------------------------------------------------------------------------------------------------------------
+ Index Scan using users_pkey on users  (cost=0.14..8.16 rows=1 width=1258) (actual time=0.006..0.006 rows=1.00 loops=1)
+   Index Cond: ((id)::text = 'user-uuid-here'::text)
+   Index Searches: 1
+   Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=91
+ Planning Time: 0.184 ms
+ Execution Time: 0.023 ms
+(8 rows)
+

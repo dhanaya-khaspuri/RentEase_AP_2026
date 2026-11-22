@@ -1,0 +1,29 @@
+Query ID: W12
+Type: WRITE
+Description: Deactivate a lease when tenant vacates
+Query SQL:
+UPDATE leases
+SET    is_active = FALSE
+WHERE  id        = 'lease-uuid-here'
+  AND  tenant_id = 'tenant-uuid-here';
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+BEGIN
+                                                              QUERY PLAN                                                              
+--------------------------------------------------------------------------------------------------------------------------------------
+ Update on leases  (cost=0.14..8.16 rows=0 width=0) (actual time=0.059..0.059 rows=0.00 loops=1)
+   Buffers: shared hit=19
+   ->  Index Scan using leases_tenant_id_key on leases  (cost=0.14..8.16 rows=1 width=7) (actual time=0.005..0.005 rows=1.00 loops=1)
+         Index Cond: ((tenant_id)::text = 'tenant-uuid-here'::text)
+         Filter: ((id)::text = 'lease-uuid-here'::text)
+         Index Searches: 1
+         Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=87
+ Planning Time: 0.153 ms
+ Execution Time: 0.101 ms
+(11 rows)
+
+ROLLBACK

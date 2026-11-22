@@ -1,0 +1,52 @@
+Query ID: R5
+Type: READ
+Description: Tenant dashboard: get the active lease for the logged-in tenant
+Query SQL:
+SELECT l.id           AS lease_id,
+       l.start_date,
+       l.end_date,
+       l.monthly_rent,
+       l.deposit,
+       l.is_active,
+       r.room_number,
+       r.floor,
+       r.type         AS room_type,
+       r.has_ac,
+       r.has_attached_bath,
+       p.name         AS property_name,
+       p.location,
+       p.manager_phone
+FROM   leases l
+JOIN   rooms r      ON r.id = l.room_id
+JOIN   properties p ON p.id = r.property_id
+WHERE  l.tenant_id = 'tenant-uuid-here'
+  AND  l.is_active = TRUE;
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+                                                                   QUERY PLAN                                                                   
+------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=0.43..16.95 rows=1 width=1563) (actual time=0.010..0.010 rows=1.00 loops=1)
+   Buffers: shared hit=6
+   ->  Nested Loop  (cost=0.29..16.44 rows=1 width=563) (actual time=0.007..0.008 rows=1.00 loops=1)
+         Buffers: shared hit=4
+         ->  Index Scan using leases_tenant_id_key on leases l  (cost=0.14..8.16 rows=1 width=221) (actual time=0.003..0.003 rows=1.00 loops=1)
+               Index Cond: ((tenant_id)::text = 'tenant-uuid-here'::text)
+               Filter: is_active
+               Index Searches: 1
+               Buffers: shared hit=2
+         ->  Index Scan using rooms_pkey on rooms r  (cost=0.14..8.16 rows=1 width=522) (actual time=0.003..0.003 rows=1.00 loops=1)
+               Index Cond: ((id)::text = (l.room_id)::text)
+               Index Searches: 1
+               Buffers: shared hit=2
+   ->  Index Scan using properties_pkey on properties p  (cost=0.14..0.50 rows=1 width=1180) (actual time=0.002..0.002 rows=1.00 loops=1)
+         Index Cond: ((id)::text = (r.property_id)::text)
+         Index Searches: 1
+         Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=267
+ Planning Time: 0.336 ms
+ Execution Time: 0.031 ms
+(21 rows)
+

@@ -1,0 +1,33 @@
+Query ID: W11
+Type: WRITE
+Description: Owner publishes a notice to all residents of a property
+Query SQL:
+INSERT INTO notices (id, property_id, title, category, content, author, priority, is_pinned)
+VALUES (
+    gen_random_uuid()::VARCHAR,
+    'property-uuid-here',
+    'Water Supply Interruption on 20-Nov',
+    'Maintenance',
+    'Due to pipeline maintenance, water supply will be interrupted from 10 AM to 2 PM on 20-Nov-2026. Please store water in advance.',
+    'Manager Suresh',
+    'High',
+    TRUE
+);
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+BEGIN
+                                            QUERY PLAN                                            
+--------------------------------------------------------------------------------------------------
+ Insert on notices  (cost=0.00..0.02 rows=0 width=0) (actual time=0.087..0.088 rows=0.00 loops=1)
+   Buffers: shared hit=33
+   ->  Result  (cost=0.00..0.02 rows=1 width=1589) (actual time=0.011..0.011 rows=1.00 loops=1)
+ Planning:
+   Buffers: shared hit=12
+ Planning Time: 0.047 ms
+ Trigger for constraint notices_property_id_fkey: time=0.217 calls=1
+ Execution Time: 0.316 ms
+(8 rows)
+
+ROLLBACK

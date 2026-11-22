@@ -1,0 +1,32 @@
+Query ID: W9
+Type: WRITE
+Description: Owner assigns a complaint to a maintenance person
+Query SQL:
+UPDATE complaints
+SET    status         = 'ASSIGNED',
+       assigned_to    = 'Ramesh Plumber',
+       assigned_phone = '+919911223344',
+       updated_at     = CURRENT_TIMESTAMP
+WHERE  id = 'complaint-uuid-here'
+  AND  property_id = 'property-uuid-here';
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+BEGIN
+                                                              QUERY PLAN                                                               
+---------------------------------------------------------------------------------------------------------------------------------------
+ Update on complaints  (cost=0.14..8.16 rows=0 width=0) (actual time=0.040..0.041 rows=0.00 loops=1)
+   Buffers: shared hit=10
+   ->  Index Scan using complaints_pkey on complaints  (cost=0.14..8.16 rows=1 width=592) (actual time=0.008..0.008 rows=1.00 loops=1)
+         Index Cond: ((id)::text = 'complaint-uuid-here'::text)
+         Filter: ((property_id)::text = 'property-uuid-here'::text)
+         Index Searches: 1
+         Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=88
+ Planning Time: 0.142 ms
+ Execution Time: 0.076 ms
+(11 rows)
+
+ROLLBACK

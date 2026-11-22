@@ -1,0 +1,34 @@
+Query ID: W6
+Type: WRITE
+Description: Generate a monthly payment record for a tenant
+Query SQL:
+INSERT INTO payments (id, property_id, tenant_id, room_number, month, due_date, amount, status)
+VALUES (
+    gen_random_uuid()::VARCHAR,
+    'property-uuid-here',
+    'tenant-uuid-here',
+    '101',
+    '2026-11',
+    '2026-11-05',
+    8500.00,
+    'PENDING'
+);
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+BEGIN
+                                            QUERY PLAN                                             
+---------------------------------------------------------------------------------------------------
+ Insert on payments  (cost=0.00..0.02 rows=0 width=0) (actual time=0.232..0.232 rows=0.00 loops=1)
+   Buffers: shared hit=55
+   ->  Result  (cost=0.00..0.02 rows=1 width=1172) (actual time=0.017..0.018 rows=1.00 loops=1)
+ Planning:
+   Buffers: shared hit=6
+ Planning Time: 0.072 ms
+ Trigger for constraint payments_property_id_fkey: time=1.545 calls=1
+ Trigger for constraint payments_tenant_id_fkey: time=0.322 calls=1
+ Execution Time: 2.117 ms
+(9 rows)
+
+ROLLBACK

@@ -1,0 +1,54 @@
+Query ID: R9
+Type: READ
+Description: Complaints list: all complaints for a property, newest first
+Query SQL:
+SELECT c.id,
+       u.name          AS tenant_name,
+       u.phone         AS tenant_phone,
+       c.room_number,
+       c.category,
+       c.title,
+       c.description,
+       c.priority,
+       c.status,
+       c.assigned_to,
+       c.assigned_phone,
+       c.resolution_notes,
+       c.created_at,
+       c.updated_at
+FROM   complaints c
+JOIN   users u ON u.id = c.tenant_id
+WHERE  c.property_id = 'property-uuid-here'
+ORDER  BY
+    CASE c.priority
+        WHEN 'URGENT' THEN 1
+        WHEN 'HIGH'   THEN 2
+        WHEN 'MEDIUM' THEN 3
+        WHEN 'LOW'    THEN 4
+    END,
+    c.created_at DESC;
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+                                                                                                               QUERY PLAN                                                                                                               
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=19.07..19.07 rows=1 width=2182) (actual time=0.018..0.018 rows=1.00 loops=1)
+   Sort Key: (CASE c.priority WHEN 'URGENT'::complaint_priority THEN 1 WHEN 'HIGH'::complaint_priority THEN 2 WHEN 'MEDIUM'::complaint_priority THEN 3 WHEN 'LOW'::complaint_priority THEN 4 ELSE NULL::integer END), c.created_at DESC
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=9
+   ->  Nested Loop  (cost=0.14..19.06 rows=1 width=2182) (actual time=0.010..0.011 rows=1.00 loops=1)
+         Buffers: shared hit=3
+         ->  Seq Scan on complaints c  (cost=0.00..10.50 rows=1 width=1694) (actual time=0.003..0.003 rows=1.00 loops=1)
+               Filter: ((property_id)::text = 'property-uuid-here'::text)
+               Buffers: shared hit=1
+         ->  Index Scan using users_pkey on users u  (cost=0.14..8.16 rows=1 width=664) (actual time=0.005..0.005 rows=1.00 loops=1)
+               Index Cond: ((id)::text = (c.tenant_id)::text)
+               Index Searches: 1
+               Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=256
+ Planning Time: 0.277 ms
+ Execution Time: 0.041 ms
+(17 rows)
+

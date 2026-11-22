@@ -1,0 +1,33 @@
+Query ID: W2
+Type: WRITE
+Description: Add a new property (called by an owner)
+Query SQL:
+INSERT INTO properties (id, owner_id, name, location, type, total_rooms, amenities, manager_phone)
+VALUES (
+    gen_random_uuid()::VARCHAR,
+    'owner-uuid-here',
+    'Sunrise PG',
+    'Koramangala, Bengaluru',
+    'PG',
+    20,
+    ARRAY['WiFi', 'Meals', 'Laundry', 'CCTV'],
+    '+919900112233'
+);
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+BEGIN
+                                             QUERY PLAN                                              
+-----------------------------------------------------------------------------------------------------
+ Insert on properties  (cost=0.00..0.02 rows=0 width=0) (actual time=0.083..0.084 rows=0.00 loops=1)
+   Buffers: shared hit=36
+   ->  Result  (cost=0.00..0.02 rows=1 width=1532) (actual time=0.009..0.010 rows=1.00 loops=1)
+ Planning:
+   Buffers: shared hit=12
+ Planning Time: 0.047 ms
+ Trigger for constraint properties_owner_id_fkey: time=0.239 calls=1
+ Execution Time: 0.335 ms
+(8 rows)
+
+ROLLBACK

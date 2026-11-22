@@ -1,0 +1,29 @@
+Query ID: W5
+Type: WRITE
+Description: Update room occupancy count when a tenant is assigned
+Query SQL:
+UPDATE rooms
+SET    occupied = occupied + 1
+WHERE  id = 'room-uuid-here'
+  AND  occupied < capacity;
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+BEGIN
+                                                         QUERY PLAN                                                         
+----------------------------------------------------------------------------------------------------------------------------
+ Update on rooms  (cost=0.14..8.17 rows=0 width=0) (actual time=0.064..0.064 rows=0.00 loops=1)
+   Buffers: shared hit=25
+   ->  Index Scan using rooms_pkey on rooms  (cost=0.14..8.17 rows=1 width=10) (actual time=0.008..0.008 rows=1.00 loops=1)
+         Index Cond: ((id)::text = 'room-uuid-here'::text)
+         Filter: (occupied < capacity)
+         Index Searches: 1
+         Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=79
+ Planning Time: 0.139 ms
+ Execution Time: 0.109 ms
+(11 rows)
+
+ROLLBACK

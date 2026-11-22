@@ -1,0 +1,35 @@
+Query ID: W4
+Type: WRITE
+Description: Create a lease when a tenant is assigned to a room
+Query SQL:
+INSERT INTO leases (id, tenant_id, room_id, start_date, end_date, monthly_rent, deposit, is_active)
+VALUES (
+    gen_random_uuid()::VARCHAR,
+    'tenant-uuid-here',
+    'room-uuid-here',
+    '2026-11-01',
+    '2027-10-31',
+    8500.00,
+    17000.00,
+    TRUE
+);
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+BEGIN
+DELETE 1
+                                           QUERY PLAN                                            
+-------------------------------------------------------------------------------------------------
+ Insert on leases  (cost=0.00..0.02 rows=0 width=0) (actual time=0.038..0.038 rows=0.00 loops=1)
+   Buffers: shared hit=13
+   ->  Result  (cost=0.00..0.02 rows=1 width=319) (actual time=0.010..0.010 rows=1.00 loops=1)
+ Planning:
+   Buffers: shared hit=6
+ Planning Time: 0.014 ms
+ Trigger for constraint leases_tenant_id_fkey: time=0.152 calls=1
+ Trigger for constraint leases_room_id_fkey: time=0.093 calls=1
+ Execution Time: 0.289 ms
+(9 rows)
+
+ROLLBACK

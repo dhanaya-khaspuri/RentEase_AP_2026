@@ -1,0 +1,49 @@
+Query ID: R13
+Type: READ
+Description: Owner summary: total revenue collected per property this month
+Query SQL:
+SELECT p.id,
+       p.name,
+       p.location,
+       COUNT(pay.id)       AS total_payments,
+       SUM(pay.amount)     AS total_billed,
+       SUM(CASE WHEN pay.status = 'PAID' THEN pay.amount ELSE 0 END) AS collected,
+       SUM(CASE WHEN pay.status IN ('PENDING','OVERDUE') THEN pay.amount ELSE 0 END) AS outstanding
+FROM   properties p
+LEFT   JOIN payments pay ON pay.property_id = p.id
+                        AND pay.month = TO_CHAR(CURRENT_DATE, 'YYYY-MM')
+WHERE  p.owner_id = 'owner-uuid-here'
+GROUP  BY p.id, p.name, p.location
+ORDER  BY collected DESC;
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+                                                             QUERY PLAN                                                              
+-------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=21.90..21.90 rows=1 width=1226) (actual time=0.029..0.030 rows=1.00 loops=1)
+   Sort Key: (sum(CASE WHEN (pay.status = 'PAID'::payment_status) THEN pay.amount ELSE '0'::numeric END)) DESC
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=8
+   ->  GroupAggregate  (cost=21.85..21.89 rows=1 width=1226) (actual time=0.024..0.024 rows=1.00 loops=1)
+         Group Key: p.id
+         Buffers: shared hit=5
+         ->  Sort  (cost=21.85..21.85 rows=1 width=1232) (actual time=0.018..0.018 rows=2.00 loops=1)
+               Sort Key: p.id
+               Sort Method: quicksort  Memory: 25kB
+               Buffers: shared hit=5
+               ->  Nested Loop Left Join  (cost=0.00..21.84 rows=1 width=1232) (actual time=0.007..0.008 rows=2.00 loops=1)
+                     Join Filter: ((pay.property_id)::text = (p.id)::text)
+                     Buffers: shared hit=2
+                     ->  Seq Scan on properties p  (cost=0.00..10.62 rows=1 width=1122) (actual time=0.003..0.003 rows=1.00 loops=1)
+                           Filter: ((owner_id)::text = 'owner-uuid-here'::text)
+                           Buffers: shared hit=1
+                     ->  Seq Scan on payments pay  (cost=0.00..11.20 rows=1 width=200) (actual time=0.003..0.004 rows=2.00 loops=1)
+                           Filter: ((month)::text = to_char((CURRENT_DATE)::timestamp with time zone, 'YYYY-MM'::text))
+                           Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=241
+ Planning Time: 1.726 ms
+ Execution Time: 0.052 ms
+(24 rows)
+

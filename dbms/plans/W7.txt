@@ -1,0 +1,33 @@
+Query ID: W7
+Type: WRITE
+Description: Mark a payment as PAID after successful transaction
+Query SQL:
+UPDATE payments
+SET    status         = 'PAID',
+       payment_date   = CURRENT_TIMESTAMP,
+       payment_method = 'UPI',
+       transaction_id = 'TXN20261119001',
+       notes          = 'Paid via RentEase app'
+WHERE  id = 'payment-uuid-here'
+  AND  tenant_id = 'tenant-uuid-here';
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+BEGIN
+                                                            QUERY PLAN                                                             
+-----------------------------------------------------------------------------------------------------------------------------------
+ Update on payments  (cost=0.14..8.16 rows=0 width=0) (actual time=0.077..0.077 rows=0.00 loops=1)
+   Buffers: shared hit=25
+   ->  Index Scan using payments_pkey on payments  (cost=0.14..8.16 rows=1 width=684) (actual time=0.010..0.012 rows=1.00 loops=1)
+         Index Cond: ((id)::text = 'payment-uuid-here'::text)
+         Filter: ((tenant_id)::text = 'tenant-uuid-here'::text)
+         Index Searches: 1
+         Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=95
+ Planning Time: 0.178 ms
+ Execution Time: 0.123 ms
+(11 rows)
+
+ROLLBACK

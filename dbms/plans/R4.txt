@@ -1,0 +1,36 @@
+Query ID: R4
+Type: READ
+Description: Room list: all rooms for a given property with occupancy status
+Query SQL:
+SELECT r.id,
+       r.room_number,
+       r.floor,
+       r.capacity,
+       r.occupied,
+       r.rent,
+       r.type,
+       r.has_ac,
+       r.has_attached_bath,
+       (r.capacity - r.occupied) AS available_beds
+FROM   rooms r
+WHERE  r.property_id = 'property-uuid-here'
+ORDER  BY r.floor, r.room_number;
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+                                                 QUERY PLAN                                                  
+-------------------------------------------------------------------------------------------------------------
+ Sort  (cost=11.76..11.77 rows=1 width=460) (actual time=0.015..0.016 rows=2.00 loops=1)
+   Sort Key: floor, room_number
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=7
+   ->  Seq Scan on rooms r  (cost=0.00..11.75 rows=1 width=460) (actual time=0.003..0.003 rows=2.00 loops=1)
+         Filter: ((property_id)::text = 'property-uuid-here'::text)
+         Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=98
+ Planning Time: 0.136 ms
+ Execution Time: 0.030 ms
+(11 rows)
+

@@ -1,0 +1,53 @@
+Query ID: R14
+Type: READ
+Description: Occupancy report: room occupancy per property
+Query SQL:
+SELECT p.id,
+       p.name,
+       p.total_rooms,
+       SUM(r.capacity)                        AS total_beds,
+       SUM(r.occupied)                        AS occupied_beds,
+       SUM(r.capacity - r.occupied)           AS available_beds,
+       ROUND(
+           SUM(r.occupied)::NUMERIC * 100
+           / NULLIF(SUM(r.capacity), 0), 2
+       )                                      AS occupancy_pct
+FROM   properties p
+JOIN   rooms r ON r.property_id = p.id
+WHERE  p.owner_id = 'owner-uuid-here'
+GROUP  BY p.id, p.name, p.total_rooms
+ORDER  BY occupancy_pct DESC;
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+                                                                QUERY PLAN                                                                
+------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=22.52..22.52 rows=1 width=666) (actual time=0.038..0.038 rows=1.00 loops=1)
+   Sort Key: (round((((sum(r.occupied))::numeric * '100'::numeric) / (NULLIF(sum(r.capacity), 0))::numeric), 2)) DESC
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=8
+   ->  GroupAggregate  (cost=22.44..22.51 rows=1 width=666) (actual time=0.030..0.031 rows=1.00 loops=1)
+         Group Key: p.id
+         Buffers: shared hit=5
+         ->  Sort  (cost=22.44..22.45 rows=3 width=618) (actual time=0.024..0.024 rows=2.00 loops=1)
+               Sort Key: p.id
+               Sort Method: quicksort  Memory: 25kB
+               Buffers: shared hit=5
+               ->  Hash Join  (cost=10.64..22.42 rows=3 width=618) (actual time=0.011..0.012 rows=2.00 loops=1)
+                     Hash Cond: ((r.property_id)::text = (p.id)::text)
+                     Buffers: shared hit=2
+                     ->  Seq Scan on rooms r  (cost=0.00..11.40 rows=140 width=98) (actual time=0.002..0.002 rows=2.00 loops=1)
+                           Buffers: shared hit=1
+                     ->  Hash  (cost=10.62..10.62 rows=1 width=610) (actual time=0.006..0.006 rows=1.00 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                           Buffers: shared hit=1
+                           ->  Seq Scan on properties p  (cost=0.00..10.62 rows=1 width=610) (actual time=0.002..0.002 rows=1.00 loops=1)
+                                 Filter: ((owner_id)::text = 'owner-uuid-here'::text)
+                                 Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=219
+ Planning Time: 0.267 ms
+ Execution Time: 0.073 ms
+(26 rows)
+

@@ -1,0 +1,44 @@
+Query ID: R8
+Type: READ
+Description: Overdue payments: all OVERDUE or PENDING-past-due-date payments for a property
+Query SQL:
+SELECT pay.id,
+       u.name         AS tenant_name,
+       u.phone,
+       pay.room_number,
+       pay.month,
+       pay.due_date,
+       pay.amount,
+       pay.status,
+       (CURRENT_DATE - pay.due_date) AS days_overdue
+FROM   payments pay
+JOIN   users u ON u.id = pay.tenant_id
+WHERE  pay.property_id = 'property-uuid-here'
+  AND  (pay.status = 'OVERDUE'
+     OR (pay.status = 'PENDING' AND pay.due_date < CURRENT_DATE))
+ORDER  BY days_overdue DESC;
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+                                                                                          QUERY PLAN                                                                                           
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=19.91..19.92 rows=1 width=888) (actual time=0.018..0.019 rows=2.00 loops=1)
+   Sort Key: ((CURRENT_DATE - pay.due_date)) DESC
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=8
+   ->  Nested Loop  (cost=0.14..19.90 rows=1 width=888) (actual time=0.010..0.012 rows=2.00 loops=1)
+         Buffers: shared hit=5
+         ->  Seq Scan on payments pay  (cost=0.00..11.35 rows=1 width=400) (actual time=0.005..0.005 rows=2.00 loops=1)
+               Filter: (((property_id)::text = 'property-uuid-here'::text) AND ((status = 'OVERDUE'::payment_status) OR ((status = 'PENDING'::payment_status) AND (due_date < CURRENT_DATE))))
+               Buffers: shared hit=1
+         ->  Index Scan using users_pkey on users u  (cost=0.14..8.16 rows=1 width=664) (actual time=0.002..0.002 rows=1.00 loops=2)
+               Index Cond: ((id)::text = (pay.tenant_id)::text)
+               Index Searches: 2
+               Buffers: shared hit=4
+ Planning:
+   Buffers: shared hit=250
+ Planning Time: 0.309 ms
+ Execution Time: 0.035 ms
+(17 rows)
+

@@ -1,0 +1,31 @@
+Query ID: W1
+Type: WRITE
+Description: Register a new user (tenant, owner, or admin)
+Query SQL:
+INSERT INTO users (id, name, email, password_hash, phone, role, status)
+VALUES (
+    gen_random_uuid()::VARCHAR,
+    'Ravi Sharma',
+    'ravi@example.com',
+    '$2b$10$hashedpassword',
+    '+919876543210',
+    'TENANT',
+    'active'
+);
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+BEGIN
+                                           QUERY PLAN                                           
+------------------------------------------------------------------------------------------------
+ Insert on users  (cost=0.00..0.03 rows=0 width=0) (actual time=0.083..0.083 rows=0.00 loops=1)
+   Buffers: shared hit=54
+   ->  Result  (cost=0.00..0.03 rows=1 width=1774) (actual time=0.010..0.011 rows=1.00 loops=1)
+ Planning:
+   Buffers: shared hit=9
+ Planning Time: 0.038 ms
+ Execution Time: 0.093 ms
+(7 rows)
+
+ROLLBACK

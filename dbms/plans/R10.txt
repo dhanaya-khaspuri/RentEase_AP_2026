@@ -1,0 +1,44 @@
+Query ID: R10
+Type: READ
+Description: Tenant complaints: complaints raised by the logged-in tenant
+Query SQL:
+SELECT c.id,
+       c.category,
+       c.title,
+       c.description,
+       c.priority,
+       c.status,
+       c.assigned_to,
+       c.resolution_notes,
+       c.created_at,
+       c.updated_at,
+       p.name AS property_name
+FROM   complaints c
+JOIN   properties p ON p.id = c.property_id
+WHERE  c.tenant_id = 'tenant-uuid-here'
+ORDER  BY c.created_at DESC;
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=18.98..18.99 rows=1 width=1944) (actual time=0.015..0.015 rows=1.00 loops=1)
+   Sort Key: c.created_at DESC
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=6
+   ->  Nested Loop  (cost=0.14..18.97 rows=1 width=1944) (actual time=0.007..0.007 rows=1.00 loops=1)
+         Buffers: shared hit=3
+         ->  Seq Scan on complaints c  (cost=0.00..10.50 rows=1 width=1518) (actual time=0.003..0.003 rows=1.00 loops=1)
+               Filter: ((tenant_id)::text = 'tenant-uuid-here'::text)
+               Buffers: shared hit=1
+         ->  Index Scan using properties_pkey on properties p  (cost=0.14..8.16 rows=1 width=606) (actual time=0.003..0.003 rows=1.00 loops=1)
+               Index Cond: ((id)::text = (c.property_id)::text)
+               Index Searches: 1
+               Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=235
+ Planning Time: 0.238 ms
+ Execution Time: 0.034 ms
+(17 rows)
+

@@ -1,0 +1,23 @@
+Query ID: R1
+Type: READ
+Description: Login: look up a user by email for authentication
+Query SQL:
+SELECT id, name, email, password_hash, role, status
+FROM   users
+WHERE  email = 'tenant@example.com';
+
+======================================================================
+EXPLAIN (ANALYZE, BUFFERS) OUTPUT:
+======================================================================
+                                                         QUERY PLAN                                                          
+-----------------------------------------------------------------------------------------------------------------------------
+ Index Scan using users_email_key on users  (cost=0.14..8.16 rows=1 width=1700) (actual time=0.006..0.006 rows=1.00 loops=1)
+   Index Cond: ((email)::text = 'tenant@example.com'::text)
+   Index Searches: 1
+   Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=91
+ Planning Time: 0.222 ms
+ Execution Time: 0.026 ms
+(8 rows)
+

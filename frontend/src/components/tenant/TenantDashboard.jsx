@@ -30,6 +30,22 @@ export const TenantDashboard = () => {
     ? data.currentUser 
     : data.users.find(u => u.role === 'tenant') || data.users[1];
 
+  
+  //  If tenant is blocked, stop everything and show blocked screen
+  if (currentTenant.status === 'blocked') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-96 text-center p-10">
+        <div className="text-6xl mb-4">🚫</div>
+        <h2 className="text-2xl font-bold text-red-600 mb-2">Account Blocked</h2>
+        <p className="text-slate-500 text-sm max-w-sm">
+          Your account has been blocked by the admin. 
+          You cannot raise complaints, pay rent, or access any features. 
+          Please contact your PG owner for help.
+        </p>
+      </div>
+    );
+  }
+
   // Assigned property and room
   const assignedProperty = data.properties.find(p => p.id === currentTenant.propertyId) || data.properties[0];
   const assignedRoom = data.rooms.find(r => r.id === currentTenant.roomId) || data.rooms[0];
